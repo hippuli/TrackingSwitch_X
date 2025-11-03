@@ -1,0 +1,10 @@
+## Title: TrackingSwitch_X
+## Author: X
+## Version: 0.2
+## Interface: 11507
+## SavedVariables: TrackingSwitchX
+## SavedVariables: TrackingSwitch_XDB
+## Notes: A tracking switch addon, with the ability to pause while not moving.
+
+Embeds.xml
+TrackingSwitch_X.lua
