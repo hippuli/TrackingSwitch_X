@@ -264,8 +264,7 @@ function TrackingSwitch_X:SwitchTracking()
     -- Check conditions
     if (not self.db.profile.disableStationary or IsPlayerMoving()) and
        (not self.db.profile.disableResting or not IsResting()) and
-       (not self.db.profile.disableCombat or not UnitAffectingCombat("player")) and
-       (not UnitChannelInfo("player")) then
+       (not self.db.profile.disableCombat or not UnitAffectingCombat("player")) then
 
         local function castSpell(spellName)
             if self.db.profile.muteSwitchSound then

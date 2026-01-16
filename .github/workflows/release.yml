@@ -26,7 +26,7 @@ jobs:
         with:
           fetch-depth: 0  # gets git history for changelogs
 
-      - name: Package classic
+      - name: Package bcc
         uses: BigWigsMods/packager@v2
         with:
-          args: -g classic
+          args: -g bcc

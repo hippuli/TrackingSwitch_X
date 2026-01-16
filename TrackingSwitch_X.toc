@@ -1,7 +1,7 @@
 ## Title: TrackingSwitch_X
 ## Author: X
-## Version: 0.2
-## Interface: 11507
+## Version: 0.2.1
+## Interface: 20505
 ## SavedVariables: TrackingSwitchX
 ## SavedVariables: TrackingSwitch_XDB
 ## Notes: A tracking switch addon, with the ability to pause while not moving.
