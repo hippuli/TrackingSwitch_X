@@ -1,6 +1,6 @@
 ## Title: TrackingSwitch_X
 ## Author: X
-## Version: 0.2.1
+## Version: 0.2.2
 ## Interface: 20505
 ## SavedVariables: TrackingSwitchX
 ## SavedVariables: TrackingSwitch_XDB
