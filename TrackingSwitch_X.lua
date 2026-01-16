@@ -2,18 +2,59 @@ TrackingSwitch_X = LibStub("AceAddon-3.0"):NewAddon("TrackingSwitch_X", "AceCons
 
 local defaults = {
   profile = {
+    enableOnLogin = false,
     disableStationary = true,
     disableResting = true,
     disableCombat = true,
     timeInterval = 2,
+    useCustomTracking = false,
+    trackingOption1 = "Find Minerals",
+    trackingOption2 = "Find Herbs",
+    trackingOption3 = nil,
   },
 }
+
+TrackingSwitch_X.currentTrackingIndex = TrackingSwitch_X.currentTrackingIndex or 1
+TrackingSwitch_X.trackingList = {}
+
+
+
 
 local options = {
   name = "TrackingSwitch_X",
   handler = TrackingSwitch_X,
   type = "group",
   args = {
+    enableOnLogin = {
+      name = "Enable on login",
+      desc = "Check to enable tracking switch on login.",
+      type = "toggle",
+      get = function() return TrackingSwitch_X.db.profile.enableOnLogin end,
+      set = function(_, value)
+        TrackingSwitch_X.db.profile.enableOnLogin = value
+        TrackingSwitch_X:UpdateTimerInterval()
+      end,
+      width = "full",
+      order = 1
+    },
+    muteSwitchSound = {
+      name = "Mute switch sound",
+      desc = "Check to mute the switch sound.",
+      type = "toggle",
+      get = function() return TrackingSwitch_X.db.profile.muteSwitchSound end,
+      set = function(_, value)
+        TrackingSwitch_X.db.profile.muteSwitchSound = value
+        TrackingSwitch_X:UpdateTimerInterval()
+      end,
+      width = "full",
+      order = 2,
+    },
+
+    spacer1 = {  -- line break
+      name = " ", 
+      type = "description",
+      order = 3,
+    },
     disableStationary = {
       name = "Disable tracking switch while stationary.",
       desc = "Check to disable switching while stationary.",
@@ -61,60 +102,107 @@ local options = {
       end,
       width = "full",
     },
-    -- trackingOption1 = {
-    --   name = "Tracking Option 1",
-    --   desc = "Select the first tracking option PlaceHolder",
-    --   type = "select",
-    --   values = {
-    --     ["Find Minerals"] = "Find Minerals",
-    --     ["Find Herbs"] = "Find Herbs",
-    --     -- Add more options as needed
-    --   },
-    --   get = function() return TrackingSwitch_X.db.profile.trackingOption1 end,
-    --   set = function(_, value)
-    --     TrackingSwitch_X.db.profile.trackingOption1 = value
-    --     TrackingSwitch_X:UpdateTimerInterval()
-    --   end,
-    --   width = "half",
-    -- },
-    -- trackingOption2 = {
-    --   name = "Tracking Option 2",
-    --   desc = "Select the second tracking option PlaceHolder",
-    --   type = "select",
-    --   values = {
-    --     ["Find Minerals"] = "Find Minerals",
-    --     ["Find Herbs"] = "Find Herbs",
-    --     -- Add more options as needed
-    --   },
-    --   get = function() return TrackingSwitch_X.db.profile.trackingOption2 end,
-    --   set = function(_, value)
-    --     TrackingSwitch_X.db.profile.trackingOption2 = value
-    --     TrackingSwitch_X:UpdateTimerInterval()
-    --   end,
-    --   width = "half",
-    -- },
-    -- trackingOption3 = {
-    --   name = "Tracking Option 3",
-    --   desc = "Select the third tracking option PlaceHolder",
-    --   type = "select",
-    --   values = {
-    --     ["Find Minerals"] = "Find Minerals",
-    --     ["Find Herbs"] = "Find Herbs",
-    --     -- Add more options as needed
-    --   },
-    --   get = function() return TrackingSwitch_X.db.profile.trackingOption3 end,
-    --   set = function(_, value)
-    --     TrackingSwitch_X.db.profile.trackingOption3 = value
-    --     TrackingSwitch_X:UpdateTimerInterval()
-    --   end,
-    --   width = "half",
-    -- },
+    useCustomTracking = {
+      name = "Use custom tracking?",
+      desc = "Enable custom tracking rotation instead of the default HERB/ORE behavior.",
+      type = "toggle",
+      get = function() return TrackingSwitch_X.db.profile.useCustomTracking end,
+      set = function(_, value)
+        TrackingSwitch_X.db.profile.useCustomTracking = value
+        TrackingSwitch_X:UpdateTimerInterval()
+      end,
+      width = "full",
+    },
+    trackingOption1 = {
+      name = "Tracking Option 1",
+      desc = "Select the first tracking",
+      type = "select",
+      values = {
+        [""] = "None",  
+        ["Find Minerals"] = "Find Minerals",
+        ["Find Herbs"] = "Find Herbs",
+        ["Find Treasure"] = "Find Treasure",
+        ["Find Fish"] = "Find Fish",
+      },
+      get = function() return TrackingSwitch_X.db.profile.trackingOption1 end,
+      set = function(_, value)
+        TrackingSwitch_X.db.profile.trackingOption1 = value
+        TrackingSwitch_X:RebuildTrackingList()
+        TrackingSwitch_X:UpdateTimerInterval()
+      end,
+      hidden = function()
+        return not TrackingSwitch_X.db.profile.useCustomTracking
+      end,
+      width = 0.75,
+    },
+    trackingOption2 = {
+      name = "Tracking Option 2",
+      desc = "Select the second tracking option",
+      type = "select",
+      values = {
+        [""] = "None",  
+        ["Find Minerals"] = "Find Minerals",
+        ["Find Herbs"] = "Find Herbs",
+        ["Find Treasure"] = "Find Treasure",
+        ["Find Fish"] = "Find Fish",
+      },
+      get = function() return TrackingSwitch_X.db.profile.trackingOption2 end,
+      set = function(_, value)
+        TrackingSwitch_X.db.profile.trackingOption2 = value
+        TrackingSwitch_X:RebuildTrackingList()
+        TrackingSwitch_X:UpdateTimerInterval()
+      end,
+      hidden = function()
+        return not TrackingSwitch_X.db.profile.useCustomTracking
+      end,
+      width = 0.75,
+    },
+    trackingOption3 = {
+      name = "Tracking Option 3",
+      desc = "Select the third tracking option",
+      type = "select",
+      values = {
+        [""] = "None",  
+        ["Find Minerals"] = "Find Minerals",
+        ["Find Herbs"] = "Find Herbs",
+        ["Find Treasure"] = "Find Treasure",
+        ["Find Fish"] = "Find Fish",
+      },
+      get = function() return TrackingSwitch_X.db.profile.trackingOption3 end,
+      set = function(_, value)
+        TrackingSwitch_X.db.profile.trackingOption3 = value
+        TrackingSwitch_X:RebuildTrackingList()
+        TrackingSwitch_X:UpdateTimerInterval()
+      end,
+      hidden = function()
+        return not TrackingSwitch_X.db.profile.useCustomTracking
+      end,
+      width = 0.75,
+    },
   },
 }
 
 
 local AceGUI = LibStub("AceGUI-3.0")
 
+
+function TrackingSwitch_X:RebuildTrackingList()
+  wipe(self.trackingList)
+
+  local options = {
+    self.db.profile.trackingOption1,
+    self.db.profile.trackingOption2,
+    self.db.profile.trackingOption3,
+  }
+
+  for _, spell in ipairs(options) do
+    if spell and spell ~= "" then
+      table.insert(self.trackingList, spell)
+    end
+  end
+
+  self.currentTrackingIndex = 1
+end
 
 
 
@@ -131,7 +219,12 @@ function TrackingSwitch_X:OnInitialize()
   self:RegisterChatCommand("rl", function() ReloadUI() end) -- Reloads on /rl command
   self:RegisterChatCommand("ts", "ToggleTracking")   
   self:RegisterChatCommand("tso", "OpenConfigMenu")
-  self:RegisterChatCommand("tsx", "OpenConfigMenu")         
+  self:RegisterChatCommand("tsx", "OpenConfigMenu")
+  
+  if self.db.profile.enableOnLogin then
+    self:RebuildTrackingList()  -- build the custom tracking list first
+    self:ToggleTracking()
+  end
 end
 
 function TrackingSwitch_X:OpenConfigMenu()
@@ -168,21 +261,49 @@ function TrackingSwitch_X:ToggleTracking()
 end
 
 function TrackingSwitch_X:SwitchTracking()
-  -- Check if conditions are met to proceed
-  if (not self.db.profile.disableStationary or IsPlayerMoving()) and
-      (not self.db.profile.disableResting or not IsResting()) and
-      (not self.db.profile.disableCombat or not UnitAffectingCombat("player")) then
-    local currentTrackingIndex = GetTrackingTexture()
+    -- Check conditions
+    if (not self.db.profile.disableStationary or IsPlayerMoving()) and
+       (not self.db.profile.disableResting or not IsResting()) and
+       (not self.db.profile.disableCombat or not UnitAffectingCombat("player")) and
+       (not UnitChannelInfo("player")) then
 
-    -- Check the current tracking spell and switch to the other one
-    if currentTrackingIndex == 136025 then
-      CastSpellByName("Find Herbs")
-    else
-      CastSpellByName("Find Minerals")
+        local function castSpell(spellName)
+            if self.db.profile.muteSwitchSound then
+                -- temporarily mute
+                local oldVolume = GetCVar("Sound_EnableSFX")
+                SetCVar("Sound_EnableSFX", 0)
+                CastSpellByName(spellName)
+                SetCVar("Sound_EnableSFX", oldVolume)
+            else
+                CastSpellByName(spellName)
+            end
+        end
+
+        if self.db.profile.useCustomTracking then
+            if #self.trackingList == 0 then return end 
+
+            local spellName = self.trackingList[self.currentTrackingIndex]
+            if spellName ~= "" then
+                castSpell(spellName)
+            end
+
+            -- advance index
+            self.currentTrackingIndex = self.currentTrackingIndex + 1
+            if self.currentTrackingIndex > #self.trackingList then
+                self.currentTrackingIndex = 1
+            end
+
+        else
+            -- default HERB/ORE fallback
+            if self.currentTracking == "minerals" then
+                castSpell("Find Herbs")
+                self.currentTracking = "herbs"
+            else
+                castSpell("Find Minerals")
+                self.currentTracking = "minerals"
+            end
+        end
     end
-
-    -- print("Switched tracking to:", GetTrackingTexture())
-  else
-    -- print("Conditions not met. Skipping tracking switch.")
-  end
 end
+
+
