@@ -53,14 +53,26 @@ local options = {
       width = "full",
       order = 2,
     },
-
     spacer1 = {  -- line break
       name = " ", 
       type = "description",
+      fontSize = "medium",
       order = 3,
     },
+    DescriptionDisableOtions = {  -- line break
+      name = "|cff00ffffDisable Automatic Switching while:|r", 
+      type = "description",
+      fontSize = "medium",
+      order = 4,
+    },
+    spacer2 = {  -- line break
+      name = "", 
+      type = "description",
+      fontSize = "medium",
+      order = 5,
+    },
     disableWhileTargetActive = {
-      name = "Disable tracking switch while (attackable) target active.",
+      name = "(Attackable) target active.",
       desc = "Check to disable switching while (attackable) target is active.",
       type = "toggle",
       get = function() return TrackingSwitch_X.db.profile.disableWhileTargetActive end,
@@ -68,10 +80,11 @@ local options = {
         TrackingSwitch_X.db.profile.disableWhileTargetActive = value
         TrackingSwitch_X:UpdateTimerInterval()
       end,
-      width = "full",
+      order = 6,
+      width = "Half",
     },
     disableWhileCursorActive = {
-      name = "Disable tracking switch while dragging spell/item",
+      name = "Dragging spell/item.",
       desc = "Check to disable switching while dragging a spell or item.",
       type = "toggle",
       get = function() return TrackingSwitch_X.db.profile.disableWhileCursorActive end,
@@ -79,10 +92,11 @@ local options = {
         TrackingSwitch_X.db.profile.disableWhileCursorActive = value
         TrackingSwitch_X:UpdateTimerInterval()
       end,
-      width = "full",
+      order = 7,
+      width = "Half",
     },
     disableStationary = {
-      name = "Disable tracking switch while stationary.",
+      name = "Player is stationary.",
       desc = "Check to disable switching while stationary.",
       type = "toggle",
       get = function() return TrackingSwitch_X.db.profile.disableStationary end,
@@ -90,10 +104,11 @@ local options = {
         TrackingSwitch_X.db.profile.disableStationary = value
         TrackingSwitch_X:UpdateTimerInterval()
       end,
-      width = "full",
+      order = 8,
+      width = "Full",
     },
     disableResting = {
-      name = "Disable tracking switch while in a town/inn.",
+      name = "In a town/inn.",
       desc = "Check to disable switching while in a town/inn.",
       type = "toggle",
       get = function() return TrackingSwitch_X.db.profile.disableResting end,
@@ -101,10 +116,11 @@ local options = {
         TrackingSwitch_X.db.profile.disableResting = value
         TrackingSwitch_X:UpdateTimerInterval()
       end,
-      width = "full",
+      order = 9,
+      width = "Full",
     },
     disableCombat = {
-      name = "Disable tracking switch while in combat.",
+      name = "In combat.",
       desc = "Check to disable switching while in combat.",
       type = "toggle",
       get = function() return TrackingSwitch_X.db.profile.disableCombat end,
@@ -112,7 +128,8 @@ local options = {
         TrackingSwitch_X.db.profile.disableCombat = value
         TrackingSwitch_X:UpdateTimerInterval()
       end,
-      width = "full",
+      order = 10,
+      width = "Full",
     },
     timeInterval = {
       name = "Time interval",
@@ -309,7 +326,8 @@ function TrackingSwitch_X:SwitchTracking()
        (not self.db.profile.disableCombat or not UnitAffectingCombat("player")) and
        (not self.db.profile.disableWhileTargetActive or not UnitCanAttack("player", "target")) and
        (not self.db.profile.disableWhileCursorActive or not GetCursorInfo()) and
-       (not UnitChannelInfo("player"))
+       (not UnitChannelInfo("player")) 
+      
        then
 
         local function castSpell(spellName)
