@@ -53,23 +53,34 @@ local options = {
       width = "full",
       order = 2,
     },
+    filterTracking = {
+      name = "Hide floating combat text",
+      desc = "Hide floating combat text",
+      type = "toggle",
+      get = function() return TrackingSwitch_X.db.profile.filterTracking end,
+      set = function(_, value)
+        TrackingSwitch_X.db.profile.filterTracking = value
+      end,
+      width = "full",
+      order = 3,
+    },
     spacer1 = {  -- line break
       name = " ", 
       type = "description",
       fontSize = "medium",
-      order = 3,
+      order = 4,
     },
     DescriptionDisableOtions = {  -- line break
       name = "|cff00ffffDisable Automatic Switching while:|r", 
       type = "description",
       fontSize = "medium",
-      order = 4,
+      order = 5,
     },
     spacer2 = {  -- line break
       name = "", 
       type = "description",
       fontSize = "medium",
-      order = 5,
+      order = 6,
     },
     disableWhileTargetActive = {
       name = "(Attackable) target active.",
@@ -80,7 +91,7 @@ local options = {
         TrackingSwitch_X.db.profile.disableWhileTargetActive = value
         TrackingSwitch_X:UpdateTimerInterval()
       end,
-      order = 6,
+      order = 7 ,
       width = "Half",
     },
     disableWhileCursorActive = {
@@ -92,7 +103,7 @@ local options = {
         TrackingSwitch_X.db.profile.disableWhileCursorActive = value
         TrackingSwitch_X:UpdateTimerInterval()
       end,
-      order = 7,
+      order = 8,
       width = "Half",
     },
     disableStationary = {
@@ -104,7 +115,7 @@ local options = {
         TrackingSwitch_X.db.profile.disableStationary = value
         TrackingSwitch_X:UpdateTimerInterval()
       end,
-      order = 8,
+      order = 9,
       width = "Full",
     },
     disableResting = {
@@ -116,7 +127,7 @@ local options = {
         TrackingSwitch_X.db.profile.disableResting = value
         TrackingSwitch_X:UpdateTimerInterval()
       end,
-      order = 9,
+      order = 10,
       width = "Full",
     },
     disableCombat = {
@@ -128,7 +139,7 @@ local options = {
         TrackingSwitch_X.db.profile.disableCombat = value
         TrackingSwitch_X:UpdateTimerInterval()
       end,
-      order = 10,
+      order = 11,
       width = "Full",
     },
     timeInterval = {
@@ -223,6 +234,7 @@ local options = {
       end,
       width = 0.75,
     },
+
   },
 }
 
@@ -326,7 +338,7 @@ function TrackingSwitch_X:SwitchTracking()
        (not self.db.profile.disableCombat or not UnitAffectingCombat("player")) and
        (not self.db.profile.disableWhileTargetActive or not UnitCanAttack("player", "target")) and
        (not self.db.profile.disableWhileCursorActive or not GetCursorInfo()) and
-       (not UnitChannelInfo("player")) 
+       (not UnitChannelInfo("player"))
       
        then
 
@@ -335,18 +347,28 @@ function TrackingSwitch_X:SwitchTracking()
             if not spellID then
                 print("Unknown spell: " .. spellName)
                 return
-            end
-            
+            end            
+    
+            local oldFloatingCombatText = GetCVar("enableFloatingCombatText")
+            local oldVolume = GetCVar("Sound_EnableSFX")
             if self.db.profile.muteSwitchSound then
-                -- temporarily mute
-                local oldVolume = GetCVar("Sound_EnableSFX")
-                SetCVar("Sound_EnableSFX", 0)
-                CastSpellByID(spellID)
-                SetCVar("Sound_EnableSFX", oldVolume)
-            else
-                CastSpellByID(spellID)
+                SetCVar("Sound_EnableSFX", 0) -- Mute sound effects
             end
-        end
+            if self.db.profile.filterTracking then
+                SetCVar("enableFloatingCombatText", 0)  -- Disable floating combat text
+            end                
+
+            CastSpellByID(spellID)
+
+            if self.db.profile.muteSwitchSound then
+                SetCVar("Sound_EnableSFX", oldVolume)
+            end
+            if self.db.profile.filterTracking then
+                C_Timer.After(0.15, function()
+                    SetCVar("enableFloatingCombatText", oldFloatingCombatText)
+                end)
+            end
+          end
 
         if self.db.profile.useCustomTracking then
             if #self.trackingList == 0 then return end 
@@ -374,5 +396,9 @@ function TrackingSwitch_X:SwitchTracking()
         end
     end
 end
+
+
+     
+                -- temporarily mute
 
 
