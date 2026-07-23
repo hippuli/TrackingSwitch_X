@@ -1,4 +1,4 @@
-TrackingSwitch_X = LibStub("AceAddon-3.0"):NewAddon("TrackingSwitch_X", "AceConsole-3.0")
+TrackingSwitch_X = LibStub("AceAddon-3.0"):NewAddon("TrackingSwitch_X", "AceConsole-3.0", "AceEvent-3.0")
 
 local defaults = {
   profile = {
@@ -10,11 +10,16 @@ local defaults = {
     disableStationary = true,
     disableResting = true,
     disableCombat = true,
+    disableWhileUnmounted = false,
+    disableNotTravelForm = "Option Disabled",
     timeInterval = 2,
     useCustomTracking = false,
     trackingOption1 = "Find Minerals",
     trackingOption2 = "Find Herbs",
     trackingOption3 = nil,
+    runOnceFixFlag = true,
+    filterTracking = false,
+    filterTrackingOffset = 0.15,
   },
 }
 
@@ -63,6 +68,23 @@ local options = {
       end,
       width = "full",
       order = 3,
+    },
+    filterTrackingOffset =  { 
+      name = "Increae to hide floating text",
+      desc = "Adds time to hide combat text if still visible.",
+      type = "range",
+      min = 0.15,
+      max = 1,
+      step = 0.05,
+      get = function() return TrackingSwitch_X.db.profile.filterTrackingOffset end,
+      set = function(_, value)
+        TrackingSwitch_X.db.profile.filterTrackingOffset = value
+      end,
+      hidden = function()
+        return not TrackingSwitch_X.db.profile.filterTracking
+      end,
+      width = "full",   
+      order = 3.1,
     },
     spacer1 = {  -- line break
       name = " ", 
@@ -141,6 +163,38 @@ local options = {
       end,
       order = 11,
       width = "Full",
+    },
+    disableWhileUnmounted = {
+      name = "Player is unmounted.",
+      desc = "Check to disable switching while unmounted.",
+      type = "toggle",
+      get = function() return TrackingSwitch_X.db.profile.disableWhileUnmounted end,
+      set = function(_, value)
+        TrackingSwitch_X.db.profile.disableWhileUnmounted = value
+        TrackingSwitch_X:UpdateTimerInterval()
+      end,
+      order = 12,
+      width = "Full",
+    },
+    disableNotTravelForm = {
+      name = "Not in travel forms.",
+      desc = "Check to disable switching while not in travel forms.",
+      type = "select",
+      values = {
+        ["Option Disabled"] = "Option Disabled",
+        ["Ground Form"] = "Ground Form",
+        ["Flight Form"] = "Flight Form",
+        ["Both Forms"] = "Both Forms",
+
+      },
+      get = function() return TrackingSwitch_X.db.profile.disableNotTravelForm end,
+      set = function(_, value)
+        TrackingSwitch_X.db.profile.disableNotTravelForm = value
+        TrackingSwitch_X:UpdateTimerInterval()
+      end,
+      order = 13,
+      width = "Full",
+      hidden = function() return TrackingSwitch_X.playerClass ~= "DRUID" and TrackingSwitch_X.playerClass ~= "SHAMAN" end,
     },
     timeInterval = {
       name = "Time interval",
@@ -249,6 +303,8 @@ local spellNameToID = {
   ["Find Fish"] = 43308,
 }
 
+
+
 function TrackingSwitch_X:RebuildTrackingList()
   wipe(self.trackingList)
 
@@ -267,11 +323,12 @@ function TrackingSwitch_X:RebuildTrackingList()
   self.currentTrackingIndex = 1
 end
 
-
-
 function TrackingSwitch_X:OnInitialize()
 
   self.db = LibStub("AceDB-3.0"):New("TrackingSwitch_XDB", defaults, true)
+  if self.db.profile.disableNotTravelForm == false then
+    self.db.profile.disableNotTravelForm = "Option Disabled" --Temporary fix for old DB entries.
+  end
 
 
   print("Type /ts to toggle or /tso, /tsx for options")
@@ -291,10 +348,19 @@ function TrackingSwitch_X:OnInitialize()
   self:RegisterChatCommand("ts", "ToggleTracking")   
   self:RegisterChatCommand("tso", "OpenConfigMenu")
   self:RegisterChatCommand("tsx", "OpenConfigMenu")
+
+  
+  -- self:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
   
   if self.db.profile.enableOnLogin then
     self:RebuildTrackingList()  -- build the custom tracking list first
     self:ToggleTracking()
+  end
+
+  self.playerClass = select(2, UnitClass("player"))  --all CAPS class name
+  ---temp? Fix to prevent option stuck on when switching characters. Can probably change to workaround to save option settings later instead of per-char db.
+  if self.playerClass ~= "DRUID" and self.playerClass ~= "SHAMAN" then
+    self.db.profile.disableNotTravelForm = "Option Disabled"
   end
 end
 
@@ -308,7 +374,6 @@ function TrackingSwitch_X:UpdateTimerInterval()
   if self.trackingTimer then
     self.trackingTimer:Cancel()
   end
-
   -- Start a new timer if tracking is enabled
   if self.IS_RUNNING then
     self.trackingTimer = C_Timer.NewTicker(TrackingSwitch_X.db.profile.timeInterval,
@@ -338,8 +403,9 @@ function TrackingSwitch_X:SwitchTracking()
        (not self.db.profile.disableCombat or not UnitAffectingCombat("player")) and
        (not self.db.profile.disableWhileTargetActive or not UnitCanAttack("player", "target")) and
        (not self.db.profile.disableWhileCursorActive or not GetCursorInfo()) and
-       (not UnitChannelInfo("player"))
-      
+       (not self.db.profile.disableWhileUnmounted or IsMounted())  and
+       self:IsInAllowedTravelForm() and
+       not UnitChannelInfo("player")
        then
 
         local function castSpell(spellName)
@@ -364,7 +430,7 @@ function TrackingSwitch_X:SwitchTracking()
                 SetCVar("Sound_EnableSFX", oldVolume)
             end
             if self.db.profile.filterTracking then
-                C_Timer.After(0.15, function()
+                C_Timer.After(self.db.profile.filterTrackingOffset, function()
                     SetCVar("enableFloatingCombatText", oldFloatingCombatText)
                 end)
             end
@@ -397,8 +463,35 @@ function TrackingSwitch_X:SwitchTracking()
     end
 end
 
-
      
                 -- temporarily mute
 
+function TrackingSwitch_X:IsInAllowedTravelForm()
+    local setting = self.db.profile.disableNotTravelForm
+    if setting == "Option Disabled" or not setting then
+        return true
+    end
 
+    local form = GetShapeshiftForm()
+
+    if self.playerClass == "DRUID" then
+        local isGround = (form == 4)   -- Ground
+        local isFlight = (form == 5)   -- Flight
+        if setting == "Ground Form" then
+            return isGround
+        elseif setting == "Flight Form" then
+            return isFlight
+        elseif setting == "Both Forms" then
+            return isGround or isFlight
+        end
+
+    elseif self.playerClass == "SHAMAN" then
+        local isGhostWolf = (form == 1) 
+          if setting == "Ground Form" or setting == "Both Forms" then
+              return isGhostWolf
+          elseif setting == "Flight Form" then -- Might be pointless, may remove.
+              return false 
+          end
+    end
+end
+--updated version in toc.
