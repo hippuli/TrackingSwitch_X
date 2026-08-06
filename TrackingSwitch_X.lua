@@ -14,6 +14,7 @@ local defaults = {
     disableNotTravelForm = "Option Disabled",
     timeInterval = 2,
     useCustomTracking = false,
+    useCreatureTracking = false,
     trackingOption1 = "Find Minerals",
     trackingOption2 = "Find Herbs",
     trackingOption3 = nil,
@@ -222,17 +223,26 @@ local options = {
       end,
       width = "full",
     },
+    useCreatureTracking = {
+      name = "Use creature tracking?",
+      desc = "Enable creature tracking options.",
+      type = "toggle",
+      get = function() return TrackingSwitch_X.db.profile.useCreatureTracking end,
+      set = function(_, value)
+        TrackingSwitch_X.db.profile.useCreatureTracking = value
+        TrackingSwitch_X:RebuildTrackingList()
+        TrackingSwitch_X:UpdateTimerInterval()
+      end,
+      hidden = function()
+        return not TrackingSwitch_X.db.profile.useCustomTracking
+      end,
+      width = "full",
+    },
     trackingOption1 = {
       name = "Tracking Option 1",
       desc = "Select the first tracking",
       type = "select",
-      values = {
-        [""] = "None",  
-        ["Find Minerals"] = "Find Minerals",
-        ["Find Herbs"] = "Find Herbs",
-        ["Find Treasure"] = "Find Treasure",
-        ["Find Fish"] = "Find Fish",
-      },
+      values = function() return TrackingSwitch_X:GetTrackingOptionValues() end,
       get = function() return TrackingSwitch_X.db.profile.trackingOption1 end,
       set = function(_, value)
         TrackingSwitch_X.db.profile.trackingOption1 = value
@@ -248,13 +258,7 @@ local options = {
       name = "Tracking Option 2",
       desc = "Select the second tracking option",
       type = "select",
-      values = {
-        [""] = "None",  
-        ["Find Minerals"] = "Find Minerals",
-        ["Find Herbs"] = "Find Herbs",
-        ["Find Treasure"] = "Find Treasure",
-        ["Find Fish"] = "Find Fish",
-      },
+      values = function() return TrackingSwitch_X:GetTrackingOptionValues() end,
       get = function() return TrackingSwitch_X.db.profile.trackingOption2 end,
       set = function(_, value)
         TrackingSwitch_X.db.profile.trackingOption2 = value
@@ -270,13 +274,7 @@ local options = {
       name = "Tracking Option 3",
       desc = "Select the third tracking option",
       type = "select",
-      values = {
-        [""] = "None",  
-        ["Find Minerals"] = "Find Minerals",
-        ["Find Herbs"] = "Find Herbs",
-        ["Find Treasure"] = "Find Treasure",
-        ["Find Fish"] = "Find Fish",
-      },
+      values = function() return TrackingSwitch_X:GetTrackingOptionValues() end,
       get = function() return TrackingSwitch_X.db.profile.trackingOption3 end,
       set = function(_, value)
         TrackingSwitch_X.db.profile.trackingOption3 = value
@@ -301,6 +299,15 @@ local spellNameToID = {
   ["Find Herbs"] = 2383,
   ["Find Treasure"] = 2481,
   ["Find Fish"] = 43308,
+
+  ["Track Humanoids"] = 19883,
+  ["Track Beasts"] = 1494,
+  ["Track Undead"] = 19884,
+  ["Track Hidden"] = 19885,
+  ["Track Elementals"] = 19880,
+  ["Track Demons"] = 19878,
+  ["Track Giants"] = 19882,
+  ["Track Dragonkin"] = 19879,
 }
 
 
@@ -330,6 +337,8 @@ function TrackingSwitch_X:OnInitialize()
     self.db.profile.disableNotTravelForm = "Option Disabled" --Temporary fix for old DB entries.
   end
 
+  self:RebuildTrackingList()
+
 
   print("Type /ts to toggle or /tso, /tsx for options")
   if self.db.profile.lastNoticeVersion < 1 then
@@ -353,7 +362,7 @@ function TrackingSwitch_X:OnInitialize()
   -- self:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
   
   if self.db.profile.enableOnLogin then
-    self:RebuildTrackingList()  -- build the custom tracking list first
+    self:RebuildTrackingList()  -- build the custom tracking list first (should already run on init)
     self:ToggleTracking()
   end
 
@@ -404,8 +413,7 @@ function TrackingSwitch_X:SwitchTracking()
        (not self.db.profile.disableWhileTargetActive or not UnitCanAttack("player", "target")) and
        (not self.db.profile.disableWhileCursorActive or not GetCursorInfo()) and
        (not self.db.profile.disableWhileUnmounted or IsMounted())  and
-       self:IsInAllowedTravelForm() and
-       not UnitChannelInfo("player")
+       self:IsInAllowedTravelForm()    
        then
 
         local function castSpell(spellName)
@@ -494,4 +502,27 @@ function TrackingSwitch_X:IsInAllowedTravelForm()
           end
     end
 end
---updated version in toc.
+
+
+function TrackingSwitch_X:GetTrackingOptionValues()
+    local values = {
+        [""] = "None",  
+        ["Find Minerals"] = "Find Minerals",
+        ["Find Herbs"] = "Find Herbs",
+        ["Find Treasure"] = "Find Treasure",
+        ["Find Fish"] = "Find Fish",
+    }
+
+    if self.db and self.db.profile.useCreatureTracking then
+        values["Track Humanoids"] = "Track Humanoids"
+        values["Track Beasts"] = "Track Beasts"
+        values["Track Undead"] = "Track Undead"
+        values["Track Demons"] = "Track Demons"
+        values["Track Elementals"] = "Track Elementals"
+        values["Track Giants"] = "Track Giants"
+        values["Track Dragonkin"] = "Track Dragonkin"
+        values["Track Hidden"] = "Track Hidden"
+    end
+
+    return values
+end
