@@ -413,6 +413,7 @@ function TrackingSwitch_X:SwitchTracking()
        (not self.db.profile.disableWhileTargetActive or not UnitCanAttack("player", "target")) and
        (not self.db.profile.disableWhileCursorActive or not GetCursorInfo()) and
        (not self.db.profile.disableWhileUnmounted or IsMounted())  and
+       not UnitChannelInfo("player") and
        self:IsInAllowedTravelForm()    
        then
 
