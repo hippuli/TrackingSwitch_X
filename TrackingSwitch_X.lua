@@ -27,7 +27,9 @@ local defaults = {
 TrackingSwitch_X.currentTrackingIndex = TrackingSwitch_X.currentTrackingIndex or 1
 TrackingSwitch_X.trackingList = {}
 
-
+-- local isClassic = WOW_PROJECT_ID == (WOW_PROJECT_CLASSIC or 2)
+local isBCC = WOW_PROJECT_ID == (WOW_PROJECT_BURNING_CRUSADE_CLASSIC or 5)
+-- local isFiveEver =
 
 
 local options = {
@@ -413,6 +415,7 @@ function TrackingSwitch_X:SwitchTracking()
        (not self.db.profile.disableWhileTargetActive or not UnitCanAttack("player", "target")) and
        (not self.db.profile.disableWhileCursorActive or not GetCursorInfo()) and
        (not self.db.profile.disableWhileUnmounted or IsMounted())  and
+       not UnitChannelInfo("player") and
        self:IsInAllowedTravelForm()    
        then
 
@@ -504,7 +507,8 @@ function TrackingSwitch_X:IsInAllowedTravelForm()
 end
 
 
-function TrackingSwitch_X:GetTrackingOptionValues()
+function TrackingSwitch_X:GetTrackingOptionValues()  
+    
     local values = {
         [""] = "None",  
         ["Find Minerals"] = "Find Minerals",
@@ -512,6 +516,15 @@ function TrackingSwitch_X:GetTrackingOptionValues()
         ["Find Treasure"] = "Find Treasure",
         ["Find Fish"] = "Find Fish",
     }
+
+    if not isBCC then --change if forever adds fishing tracking book.
+      values["Find Fish"] = nil      
+    end
+
+    -- if isFiveEver then
+    --     values["Find Treasure"] = nil
+    -- end
+
 
     if self.db and self.db.profile.useCreatureTracking then
         values["Track Humanoids"] = "Track Humanoids"
@@ -523,6 +536,8 @@ function TrackingSwitch_X:GetTrackingOptionValues()
         values["Track Dragonkin"] = "Track Dragonkin"
         values["Track Hidden"] = "Track Hidden"
     end
+
+
 
     return values
 end
