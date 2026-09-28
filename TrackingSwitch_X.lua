@@ -27,7 +27,7 @@ local defaults = {
 TrackingSwitch_X.currentTrackingIndex = TrackingSwitch_X.currentTrackingIndex or 1
 TrackingSwitch_X.trackingList = {}
 
--- local isClassic = WOW_PROJECT_ID == (WOW_PROJECT_CLASSIC or 2)
+local isClassic = WOW_PROJECT_ID == (WOW_PROJECT_CLASSIC or 2)
 local isBCC = WOW_PROJECT_ID == (WOW_PROJECT_BURNING_CRUSADE_CLASSIC or 5)
 -- local isFiveEver = f
 
@@ -519,6 +519,10 @@ function TrackingSwitch_X:GetTrackingOptionValues()
 
     if not isBCC then --change if forever adds fishing tracking book.
       values["Find Fish"] = nil      
+    end
+
+    if not isBCC or isClassic then
+      values["Find Treasure"] = nil
     end
 
     -- if isFiveEver then
